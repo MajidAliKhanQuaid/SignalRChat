@@ -9,7 +9,6 @@ using System.Web;
 
 namespace SignalRChat
 {
-    //
     public class ChatHub : Hub
     {
         static List<MessageGroup> activeMessageGroups = new List<MessageGroup>();
