@@ -1,0 +1,88 @@
+﻿@{
+    ViewBag.Title = "Home Page";
+}
+
+<script type="text/javascript" src="~/Scripts/jquery.signalR-2.4.0.min.js"></script>
+<script src="/signalr/hubs"></script>
+<script type="text/javascript">
+    var email = prompt("Enter your email ?");
+    var groups = [];
+    @foreach(var group in ViewBag.UserGroups)
+    {
+        @:groups.push('@group');
+    }
+
+    $(document).ready(function () {
+
+        for (var index in groups) {
+            var group = groups[index];
+            var option = "<option value=\"" + group + "\">" + group + "</option>";
+            $("#sGroups").append(option);
+            groups.push(group);
+        }
+
+        while (email.indexOf('@@') == -1) {
+            email = prompt("Enter your email ?");
+        }
+        debugger;
+        var chatHubProxy = $.connection.chatHub;
+        $.connection.hub.qs = "Type=C/JS&Email=" + email + "&Token=secret";
+        chatHubProxy.client.custom = function (message) {
+            var group = "<td class=\"col-md-4\">" + message.SendTo + "</td>";
+            var sender = "<td class=\"col-md-2\">" + message.Sender + "</td>";
+            var messageCol = "<td class=\"col-md-8\">" + message.Message + "</td>";
+            var row = "<tr>" + group + sender + messageCol + "</tr>";
+            $("#tBody").append(row);
+            console.log(message);
+        };
+        $.connection.hub.start().done(function () {
+            chatHubProxy.server.subscribeToMany(groups);
+            $('#btnSend').click(function () {
+                debugger;
+                if ($("#txtMessage").val().length > 0) {
+                    var group = $("#sGroups").val();
+                    if (groups.indexOf(group) != -1) {
+                        chatHubProxy.server.sendCustomMessage({ "Sender": email, "SendTo": group, "Message": $("#txtMessage").val() });
+                        $('#txtMessage').val('').focus();
+                    }
+                    else {
+                        alert("Select a group first");
+                    }
+                }
+            });
+        });
+        //$("#btnAddGroup").click(function () {
+        //    debugger;
+        //    var group = $("#txtGroup").val();
+        //    if (group.length > 0) {
+        //        if (groups.indexOf(group) == -1) {
+        //            var option = "<option value=\"" + group + "\">" + group + "</option>";
+        //            $("#sGroups").append(option);
+        //            groups.push(group);
+        //        }
+        //        else {
+        //            alert("Group Name Alreday Exists");
+        //        }
+        //    }
+        //});
+    });
+</script>
+<div class="form-group">
+    <input id="txtMessage" type="text" placeholder="Type Message Here" class="form-control" />
+    <button id="btnSend" class="btn btn-default">Send Message</button>
+</div>
+<div class="row">
+    <select id="sGroups" class="form-control"></select>
+</div>
+<div class="row">
+    <table class="table table-responsive">
+        <thead>
+            <tr>
+                <th class="col-md-4">Group</th>
+                <th class="col-md-2">Sender</th>
+                <th class="col-md-6">Message</th>
+            </tr>
+        </thead>
+        <tbody id="tBody"></tbody>
+    </table>
+</div>
